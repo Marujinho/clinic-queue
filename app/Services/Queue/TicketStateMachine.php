@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\Queue;
 
-use App\Enums\TicketPriority;
 use App\Enums\TicketStatus;
 use App\Models\Queue;
 use App\Models\QueueTicket;
