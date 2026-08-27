@@ -10,7 +10,15 @@ its own git worktree; then an Integration phase merges, builds dashboards, seeds
 
 ---
 
-## 0. Status — ~40% done, ~60% remaining
+## 0. Status — COMPLETE (2026-08-27)
+
+**The MVP is finished.** All four domains were completed and merged into `build/mvp`, the role
+dashboards were built, the full suite is green (190 tests / 459 assertions), pint is clean, the
+browser smoke (§7) passed, and PR #1 (`build/mvp` → `master`) is open at
+https://github.com/Marujinho/clinic-queue/pull/1. Worktrees have been removed. The sections below
+are kept as a historical record of the build plan and for environment-rebuild reference (§2, §3, §8).
+
+### Historical status at the time §5 agents were relaunched — ~40% done, ~60% remaining
 
 **DONE and committed on branch `build/mvp`:**
 - Repo wired to `github.com/Marujinho/clinic-queue`; `master` (empty initial) → `build/mvp` integration branch.
