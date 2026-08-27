@@ -384,6 +384,8 @@ Each domain team edits **only its own sub-section** below to avoid merge conflic
 
 | Component | Type | Path | Spec | Status | Notes |
 |-----------|------|------|------|--------|-------|
+| `pages::patient.index` | Livewire full page | `resources/views/pages/patient/⚡index.blade.php` | §7.6 data-table, §7 card, filter-pill/select, modal | Done | Patient list: live search (name / MRN), status filter, paginated table, deactivate/activate toggle, create/edit modal. Manage actions gated by `manage-patients`; providers get a read-only list. |
+| `patient.form` | Livewire child | `resources/views/components/patient/⚡form.blade.php` | Form fields + `x-button` | Done | Create/edit form. Validates BR-01 (unique MRN, self-ignored on edit) and no future DOB. `authorize('manage-patients')` on save; dispatches `patient-saved`. |
 
 ### Provider
 
