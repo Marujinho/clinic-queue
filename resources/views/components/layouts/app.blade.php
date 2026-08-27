@@ -26,6 +26,10 @@
                         :active="request()->is('/') || request()->is('dashboard*')">Dashboard</x-nav-item>
                     <x-nav-item href="/queue-board" icon="board"
                         :active="request()->is('queue-board*')">Queue Board</x-nav-item>
+                    @can('check-in')
+                        <x-nav-item href="/check-in" icon="plus"
+                            :active="request()->is('check-in*')">Check-in</x-nav-item>
+                    @endcan
                 </div>
 
                 {{-- Records --}}
@@ -38,13 +42,19 @@
                 </div>
 
                 {{-- Management --}}
-                <div class="space-y-1">
-                    <p class="px-3 mb-1 text-xs font-medium uppercase tracking-wide text-muted-soft">Management</p>
-                    <x-nav-item href="/providers" icon="provider"
-                        :active="request()->is('providers*')">Providers</x-nav-item>
-                    <x-nav-item href="/queues" icon="queue"
-                        :active="request()->is('queues*')">Queues</x-nav-item>
-                </div>
+                @canany(['manage-providers', 'manage-queues'])
+                    <div class="space-y-1">
+                        <p class="px-3 mb-1 text-xs font-medium uppercase tracking-wide text-muted-soft">Management</p>
+                        @can('manage-providers')
+                            <x-nav-item href="/providers" icon="provider"
+                                :active="request()->is('providers*')">Providers</x-nav-item>
+                        @endcan
+                        @can('manage-queues')
+                            <x-nav-item href="/queues" icon="queue"
+                                :active="request()->is('queues*')">Queues</x-nav-item>
+                        @endcan
+                    </div>
+                @endcanany
             </nav>
         </aside>
 

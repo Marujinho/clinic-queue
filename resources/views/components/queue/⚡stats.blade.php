@@ -58,7 +58,7 @@ new class extends Component
     }
 }; ?>
 
-<div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+<div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5" wire:poll.10s>
     <x-stat-card label="Waiting" :value="$waiting" icon="queue" />
     <x-stat-card label="Called" :value="$called" icon="bell" />
     <x-stat-card label="In service" :value="$inService" icon="clock" />
