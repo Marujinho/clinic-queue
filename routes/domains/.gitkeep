@@ -1,0 +1,2 @@
+# Per-domain route files live here. Each domain owns its own file
+# (e.g. patient.php); routes/web.php auto-requires them inside the auth group.

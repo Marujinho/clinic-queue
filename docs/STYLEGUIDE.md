@@ -333,9 +333,9 @@ Each spec lists purpose, anatomy, the Tailwind classes to use (via tokens), and 
 
 | Item | Status |
 |------|--------|
-| Design tokens in `app.css @theme` | **Not applied** — spec in [§3](#3-color-palette) |
-| Switzer font self-hosted | **Not applied** — spec in [§4](#4-typography); app currently loads Instrument Sans via Bunny |
-| Blade/Livewire components | **None yet** — see [Component Catalog](#11-component-catalog) |
+| Design tokens in `app.css @theme` | **Applied** — all §3 `--color-*` tokens + `--font-sans` wired into `resources/css/app.css`; added `@source '../views/**/*.blade.php'` |
+| Switzer font self-hosted | **Pending** — font files not yet added; no `@font-face` declared, so the fallback stack (`ui-sans-serif, system-ui, sans-serif`) is active. The Bunny **Instrument Sans** loader has been **removed** from `vite.config.js` |
+| Blade/Livewire components | **Base components: Done** — `button`, `card`, `stat-card`, `status-badge`, `nav-item`, `avatar`, `icon`, `icon-chip`, `filter-pill`, `data-table`, `modal`, and layouts `layouts/app`, `layouts/guest`. Domain components (Patient/Provider/Appointment/Queue): **None yet** — see [Component Catalog](#11-component-catalog) |
 
 This guide is documentation-first: it defines the target so that all future UI work is consistent from day one. Wire up the tokens and font before (or alongside) building the first real component.
 
@@ -360,8 +360,42 @@ If a design need is not covered by an existing token or spec, extend this guide 
 
 Every reusable Blade/Livewire component in the app is registered here. **Add a row whenever you create or significantly change a component.**
 
+Each domain team edits **only its own sub-section** below to avoid merge conflicts.
+
+### Base (foundation)
+
 | Component | Type | Path | Spec | Status | Notes |
 |-----------|------|------|------|--------|-------|
-| _Template — copy this row_ | Blade / Livewire | `resources/views/components/…` or `app/Livewire/…` | [§7.x](#7-component-specs) | Planned / In progress / Done | — |
+| Icon | Blade | `resources/views/components/icon.blade.php` | [§7](#7-component-specs) | Done | Inline Heroicons (outline, stroke 1.5), `w-5 h-5` default; unknown name → empty span |
+| Button | Blade | `resources/views/components/button.blade.php` | [§7.1](#71-button) | Done | Variants primary/secondary/ghost; sizes md/sm; focus ring; passes through `wire:click` |
+| Card | Blade | `resources/views/components/card.blade.php` | [§7.2](#72-card--panel) | Done | Optional `title` + `actions` slot; standard card shadow |
+| Stat card | Blade | `resources/views/components/stat-card.blade.php` | [§7.3](#73-stat--metric-card) | Done | Default + `hero` variant; delta success/danger; optional icon chip |
+| Status badge | Blade | `resources/views/components/status-badge.blade.php` | [§7.4](#74-status-badge) | Done | success/warning/danger/info/neutral; label always rendered |
+| Nav item | Blade | `resources/views/components/nav-item.blade.php` | [§7.5](#75-nav-item) | Done | Idle/active states; renders `<a href>`; optional leading icon |
+| Data table | Blade | `resources/views/components/data-table.blade.php` | [§7.6](#76-data-table) | Done | `head` slot for thead; body via default slot; row/cell markup documented in-file |
+| Avatar | Blade | `resources/views/components/avatar.blade.php` | [§7.7](#77-avatar) | Done | `src` image or initials fallback on `primary-tint`; sizes md/sm |
+| Filter pill | Blade | `resources/views/components/filter-pill.blade.php` | [§7.8](#78-filter--sort-pill) | Done | Leading icon + label + trailing chevron; renders `<button>` |
+| Icon chip | Blade | `resources/views/components/icon-chip.blade.php` | [§7.9](#79-icon-chip) | Done | Wraps a leading icon in a `primary-tint` `w-8 h-8` chip |
+| Modal | Blade | `resources/views/components/modal.blade.php` | [§7](#7-component-specs) | Done | Presentational overlay + panel; parent controls visibility via `@if`; `close`/`footer` slots |
+| App layout | Blade | `resources/views/components/layouts/app.blade.php` | [§6](#6-layout) | Done | Full-page dashboard shell (`components.layouts.app`): sidebar + top bar + flash region + `{{ $slot }}` |
+| Guest layout | Blade | `resources/views/components/layouts/guest.blade.php` | [§6](#6-layout) | Done | Centered `max-w-md` shell with wordmark; used by auth/login pages |
 
-_No components have been built yet. This table will grow as the UI is implemented; the [governing rule](#clinic-queue--style-guideline) makes registration mandatory._
+### Patient
+
+| Component | Type | Path | Spec | Status | Notes |
+|-----------|------|------|------|--------|-------|
+
+### Provider
+
+| Component | Type | Path | Spec | Status | Notes |
+|-----------|------|------|------|--------|-------|
+
+### Appointment
+
+| Component | Type | Path | Spec | Status | Notes |
+|-----------|------|------|------|--------|-------|
+
+### Queue
+
+| Component | Type | Path | Spec | Status | Notes |
+|-----------|------|------|------|--------|-------|

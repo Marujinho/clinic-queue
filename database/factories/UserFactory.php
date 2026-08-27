@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
+use App\Enums\Role;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -30,6 +33,8 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            'role' => Role::Receptionist,
+            'active' => true,
         ];
     }
 
@@ -40,6 +45,27 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'role' => Role::Admin,
+        ]);
+    }
+
+    public function receptionist(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'role' => Role::Receptionist,
+        ]);
+    }
+
+    public function provider(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'role' => Role::Provider,
         ]);
     }
 }
