@@ -1,58 +1,78 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Clinic Queue
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A clinic queue management system: patients, healthcare providers, appointments, and live
+walk-in queues with priority ordering, built with **Laravel 13**, **Livewire 4**
+(single-file components), **Tailwind CSS v4**, and **Laravel Sail** (Docker).
 
-## About Laravel
+## Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Patients** — searchable registry (name / medical record number), activate/deactivate,
+  unique MRN (BR-01).
+- **Providers** — admin-managed registry with specialty and unique license number.
+- **Appointments** — scheduling with active-only patient/provider guards, ±30-minute
+  per-provider conflict detection (BR-03), and a strict status state machine
+  (scheduled → confirmed → in progress → completed; cancel / no-show from early states).
+- **Queues** — configurable queues (priority-enabled per queue), patient check-in with
+  per-queue daily ticket numbering (`A001`…), one active ticket per patient (BR-05),
+  live queue board (`wire:poll`) calling patients by priority then arrival (BR-04),
+  and a ticket state machine (waiting → called → in service → completed, BR-06).
+- **Role dashboards** — reception overview (today's appointments + queue stats + per-queue
+  table) and provider console (current patient with Start / Complete / Cancel).
+- **Authorization** — Admin / Receptionist / Provider roles enforced via Gates and
+  policies across every screen and action (spec §6 permission matrix).
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Requirements
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- Docker + Docker Compose
+- PHP 8.3+ and Composer on the host (only to bootstrap Sail)
+- Node 20+
 
-## Learning Laravel
+## Setup
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+```sh
+git clone https://github.com/Marujinho/clinic-queue.git
+cd clinic-queue
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+cp .env.example .env
+# Ensure the DB block matches compose.yaml:
+#   DB_CONNECTION=mysql  DB_HOST=mysql  DB_PORT=3306
+#   DB_DATABASE=laravel  DB_USERNAME=sail  DB_PASSWORD=password
+#   APP_PORT=8081
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+composer install
+./vendor/bin/sail up -d
+./vendor/bin/sail artisan key:generate
+./vendor/bin/sail composer install
+npm install && npm run build
 
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+./vendor/bin/sail artisan migrate:fresh --seed
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+The app runs at <http://localhost:8081>.
 
-## Contributing
+### Seeded logins (password: `password`)
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+| Email | Role |
+|-------|------|
+| `admin@clinic.test` | Admin |
+| `receptionist@clinic.test` | Receptionist |
+| `provider@clinic.test` | Provider |
 
-## Code of Conduct
+## Tests
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+The suite uses in-memory SQLite (no MySQL needed) via Pest:
 
-## Security Vulnerabilities
+```sh
+./vendor/bin/sail artisan test
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Code style is enforced with Pint:
 
-## License
+```sh
+./vendor/bin/sail exec laravel.test ./vendor/bin/pint --test
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Docs
+
+- `docs/STYLEGUIDE.md` — design tokens, component specs, and the component catalog.
+- `RUNBOOK.md` — build history and environment/rebuild notes.

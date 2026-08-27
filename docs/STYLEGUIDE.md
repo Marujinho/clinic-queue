@@ -335,9 +335,9 @@ Each spec lists purpose, anatomy, the Tailwind classes to use (via tokens), and 
 |------|--------|
 | Design tokens in `app.css @theme` | **Applied** — all §3 `--color-*` tokens + `--font-sans` wired into `resources/css/app.css`; added `@source '../views/**/*.blade.php'` |
 | Switzer font self-hosted | **Pending** — font files not yet added; no `@font-face` declared, so the fallback stack (`ui-sans-serif, system-ui, sans-serif`) is active. The Bunny **Instrument Sans** loader has been **removed** from `vite.config.js` |
-| Blade/Livewire components | **Base components: Done** — `button`, `card`, `stat-card`, `status-badge`, `nav-item`, `avatar`, `icon`, `icon-chip`, `filter-pill`, `data-table`, `modal`, and layouts `layouts/app`, `layouts/guest`. Domain components (Patient/Provider/Appointment/Queue): **None yet** — see [Component Catalog](#11-component-catalog) |
+| Blade/Livewire components | **Done** — all base components (`button`, `card`, `stat-card`, `status-badge`, `nav-item`, `avatar`, `icon`, `icon-chip`, `filter-pill`, `data-table`, `modal`, layouts `layouts/app`, `layouts/guest`) plus every domain (Patient / Provider / Appointment / Queue) and the role dashboards — see [Component Catalog](#11-component-catalog) |
 
-This guide is documentation-first: it defines the target so that all future UI work is consistent from day one. Wire up the tokens and font before (or alongside) building the first real component.
+All MVP screens are built against the tokens above; the Switzer font files remain the only pending asset (fallback stack active).
 
 ---
 
@@ -391,6 +391,8 @@ Each domain team edits **only its own sub-section** below to avoid merge conflic
 
 | Component | Type | Path | Spec | Status | Notes |
 |-----------|------|------|------|--------|-------|
+| `pages::provider.index` | Livewire full page | `resources/views/pages/provider/⚡index.blade.php` | §7.6 data-table, §7 card, filter-pill, modal | Done | Provider list (route `/providers`): live search (name / specialty), status filter, paginated table, activate/deactivate toggle, create/edit modal. Admin-only (`manage-providers`). |
+| `provider.form` | Livewire child | `resources/views/components/provider/⚡form.blade.php` | Form fields + `x-button` | Done | Create/edit form. Validates name length, required specialty, unique license number (self-ignored on edit). `authorize('manage-providers')` on save; dispatches `provider-saved`. |
 
 ### Appointment
 
@@ -408,3 +410,11 @@ Each domain team edits **only its own sub-section** below to avoid merge conflic
 | Queue board | Livewire page | `resources/views/pages/queue/⚡board.blade.php` | [§7.2](#72-card--panel) | Done | Live board (`pages::queue.board`, route `/queue-board`, `wire:poll.5s`): per active queue NOW SERVING + BR-04-ordered waiting list; Call Next / Start / Complete / Cancel gated per role (BR-07) via `TicketStateMachine` |
 | Queue form | Livewire child | `resources/views/components/queue/⚡form.blade.php` | [§7](#7-component-specs) | Done | Create/edit queue modal body (`<livewire:queue.form>`): name, description, department, priority_enabled, active; dispatches `queue-saved` / `form-cancelled`; admin-only |
 | Queue stats | Livewire child | `resources/views/components/queue/⚡stats.blade.php` | [§7.3](#73-stat--metric-card) | Done | Stat-card row (`<livewire:queue.stats>`; optional `queue` prop scopes to one queue): Waiting / Called / In service / Completed today / Avg. wait (called_at − checked_in_at); reusable by dashboards |
+
+### Dashboard
+
+| Component | Type | Path | Spec | Status | Notes |
+|-----------|------|------|------|--------|-------|
+| `pages::dashboard.index` | Livewire full page | `resources/views/pages/dashboard/⚡index.blade.php` | [§6](#6-layout) | Done | Role dispatcher at `/dashboard`: providers get `dashboard.provider`, admins/receptionists get `dashboard.reception`. |
+| Reception dashboard | Livewire child | `resources/views/components/dashboard/⚡reception.blade.php` | [§7.3](#73-stat--metric-card), [§7.6](#76-data-table) | Done | Today's appointments (hero) + completed/cancelled today, `queue.stats` row, per-queue waiting table with now-serving ticket; `wire:poll.10s`. |
+| Provider dashboard | Livewire child | `resources/views/components/dashboard/⚡provider.blade.php` | [§7.2](#72-card--panel), [§7.3](#73-stat--metric-card) | Done | Current called/in-service patient with Start / Complete / Cancel via `TicketStateMachine` (role-gated), `queue.stats` row; `wire:poll.5s`. |

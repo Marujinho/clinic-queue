@@ -1,17 +1,21 @@
 <?php
 
+use App\Enums\Role;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
-// Placeholder dashboard shipped with the foundation so the app is navigable and
-// post-login redirects resolve. Phase 3 replaces this with the role-specific
-// Reception and Provider dashboards.
+// Role dispatcher: providers get the "current patient" console, admins and
+// receptionists get the reception overview. Keeping a single /dashboard route
+// preserves the post-login redirect and the sidebar nav item.
 new #[Layout('components.layouts.app')] class extends Component
 {
     public function with(): array
     {
+        $user = auth()->user();
+
         return [
-            'user' => auth()->user(),
+            'user' => $user,
+            'isProviderDashboard' => $user?->role === Role::Provider,
         ];
     }
 };
@@ -20,14 +24,14 @@ new #[Layout('components.layouts.app')] class extends Component
 <div class="space-y-6">
     <div class="space-y-1">
         <h1 class="text-2xl font-bold text-ink leading-tight">Hello, {{ $user?->name }}!</h1>
-        <p class="text-sm text-muted">Welcome to the Clinic Queue console.</p>
+        <p class="text-sm text-muted">
+            {{ $isProviderDashboard ? 'Your patient console for today.' : 'Today at a glance across appointments and queues.' }}
+        </p>
     </div>
 
-    <x-card title="Getting started">
-        <p class="text-sm text-muted">
-            Use the sidebar to manage patients, appointments, providers and queues, or open the
-            live Queue Board to call the next patient. Your role is
-            <span class="font-medium text-ink">{{ $user?->role?->label() }}</span>.
-        </p>
-    </x-card>
+    @if ($isProviderDashboard)
+        <livewire:dashboard.provider />
+    @else
+        <livewire:dashboard.reception />
+    @endif
 </div>
