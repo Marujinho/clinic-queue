@@ -394,6 +394,8 @@ Each domain team edits **only its own sub-section** below to avoid merge conflic
 
 | Component | Type | Path | Spec | Status | Notes |
 |-----------|------|------|------|--------|-------|
+| `pages::appointment.index` | Livewire full page | `resources/views/pages/appointment/⚡index.blade.php` | §7.6 data-table, §7 card, §7.4 status-badge, modal | Done | Appointment list: status/provider/date filters, paginated table, contextual row actions (Confirm, Start, Complete, Cancel, No-show, Edit) driven by `AppointmentTransitioner`, create/edit modal. Manage actions gated by `manage-appointments`; providers get a read-only list. |
+| `appointment.form` | Livewire child | `resources/views/components/appointment/⚡form.blade.php` | Form fields + `x-button` | Done | Create/edit form. Active-only patient/provider selects, `scheduled_at` not in the past, BR-03 conflict check via `AppointmentScheduler` (self-ignored on edit). `authorize('manage-appointments')` on save; dispatches `appointment-saved`. |
 
 ### Queue
 
