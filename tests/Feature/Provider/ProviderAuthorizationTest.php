@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Enums\Role;
 use App\Models\HealthcareProvider;
-use Illuminate\Auth\Access\AuthorizationException;
 use Livewire\Livewire;
 
 it('lets an admin save a provider and view the index route', function () {
@@ -35,7 +34,7 @@ it('forbids a receptionist from saving and from the index route', function () {
     expect(HealthcareProvider::where('license_number', 'CRM-RECEP-1')->exists())->toBeFalse();
 
     test()->get('/providers')->assertForbidden();
-})->throws(AuthorizationException::class);
+});
 
 it('forbids a provider from saving and from the index route', function () {
     actingAsRole(Role::Provider);
@@ -50,4 +49,4 @@ it('forbids a provider from saving and from the index route', function () {
         ->assertForbidden();
 
     expect(HealthcareProvider::where('license_number', 'CRM-PROV-1')->exists())->toBeFalse();
-})->throws(AuthorizationException::class);
+});
