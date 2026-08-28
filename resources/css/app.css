@@ -1,0 +1,35 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../views/**/*.blade.php';
+
+/*
+ * Switzer web font files are PENDING (not yet added under resources/fonts/switzer/).
+ * No @font-face is declared yet, so the fallback stack below is active — the
+ * system UI sans-serif renders until the licensed Switzer .woff2 files land.
+ */
+@theme {
+    --font-sans: 'Switzer', ui-sans-serif, system-ui, sans-serif;
+
+    --color-primary: #34AA86;
+    --color-primary-hover: #2E9576;
+    --color-primary-tint: #EAF6F1;
+    --color-surface: #FFFFFF;
+    --color-background: #F4F5F5;
+    --color-ink: #303030;
+
+    --color-muted: #6B7280;
+    --color-muted-soft: #9CA3AF;
+    --color-border: #E5E7EB;
+    --color-hover-surface: #F9FAFB;
+
+    --color-success: #1E9E6A;
+    --color-success-tint: #E7F6EF;
+    --color-warning: #B78103;
+    --color-warning-tint: #FDF4E3;
+    --color-danger: #DC2626;
+    --color-danger-tint: #FDECEC;
+    --color-info: #2563EB;
+    --color-info-tint: #EAF1FE;
+}
