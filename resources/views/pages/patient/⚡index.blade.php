@@ -3,6 +3,7 @@
 use App\Models\Patient;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -17,6 +18,7 @@ new #[Layout('components.layouts.app')] class extends Component
 
     public bool $showForm = false;
 
+    #[Locked]
     public ?int $editingId = null;
 
     public function updatedSearch(): void
@@ -76,16 +78,7 @@ new #[Layout('components.layouts.app')] class extends Component
         $search = trim($this->search);
 
         $patients = Patient::query()
-            ->when($search !== '', function (Builder $query) use ($search): void {
-                $like = '%'.$search.'%';
-
-                $query->where(function (Builder $inner) use ($like): void {
-                    $inner->where('first_name', 'like', $like)
-                        ->orWhere('last_name', 'like', $like)
-                        ->orWhere('medical_record_number', 'like', $like)
-                        ->orWhereRaw("(first_name || ' ' || last_name) like ?", [$like]);
-                });
-            })
+            ->when($search !== '', fn (Builder $query) => $query->search($search))
             ->when($this->status === 'active', fn (Builder $query) => $query->where('active', true))
             ->when($this->status === 'inactive', fn (Builder $query) => $query->where('active', false))
             ->orderBy('first_name')

@@ -147,3 +147,22 @@ it('returns null from call-next when nothing is waiting', function () {
 
     expect($this->machine->callNext($queue))->toBeNull();
 });
+
+it('rejects a transition when the ticket changed underneath the caller', function () {
+    $ticket = QueueTicket::factory()->create();
+
+    // Another request calls the same ticket after this instance was loaded.
+    QueueTicket::query()->whereKey($ticket->id)->update(['status' => TicketStatus::Called]);
+
+    expect(fn () => $this->machine->call($ticket))->toThrow(InvalidTicketTransition::class);
+
+    expect($ticket->fresh()->status)->toBe(TicketStatus::Called);
+});
+
+it('calls only one ticket when callNext runs twice for a single waiting ticket', function () {
+    $queue = Queue::factory()->create();
+    $ticket = QueueTicket::factory()->create(['queue_id' => $queue->id]);
+
+    expect($this->machine->callNext($queue)?->id)->toBe($ticket->id)
+        ->and($this->machine->callNext($queue))->toBeNull();
+});

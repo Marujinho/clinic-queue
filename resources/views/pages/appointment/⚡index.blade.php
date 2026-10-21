@@ -6,6 +6,7 @@ use App\Models\HealthcareProvider;
 use App\Services\Appointment\AppointmentTransitioner;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -22,6 +23,7 @@ new #[Layout('components.layouts.app')] class extends Component
 
     public bool $showForm = false;
 
+    #[Locked]
     public ?int $editingId = null;
 
     public function updatedStatus(): void
@@ -78,7 +80,13 @@ new #[Layout('components.layouts.app')] class extends Component
         $this->authorize('manage-appointments');
 
         $appointment = Appointment::findOrFail($appointmentId);
-        $to = AppointmentStatus::from($status);
+        $to = AppointmentStatus::tryFrom($status);
+
+        if ($to === null) {
+            session()->flash('error', 'Unknown appointment status.');
+
+            return;
+        }
 
         try {
             app(AppointmentTransitioner::class)->transition($appointment, $to);

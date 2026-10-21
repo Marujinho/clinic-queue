@@ -64,4 +64,24 @@ class Patient extends Model
     {
         $query->where('active', true);
     }
+
+    /**
+     * Match patients by name or medical record number. Each whitespace-separated
+     * word of the term must match at least one of the columns, so "Grace Hopper"
+     * finds the patient regardless of database (no string-concat SQL needed).
+     *
+     * @param  Builder<Patient>  $query
+     */
+    public function scopeSearch(Builder $query, string $term): void
+    {
+        foreach (preg_split('/\s+/', trim($term), -1, PREG_SPLIT_NO_EMPTY) ?: [] as $word) {
+            $like = '%'.addcslashes($word, '%_\\').'%';
+
+            $query->where(function (Builder $inner) use ($like): void {
+                $inner->where('first_name', 'like', $like)
+                    ->orWhere('last_name', 'like', $like)
+                    ->orWhere('medical_record_number', 'like', $like);
+            });
+        }
+    }
 }

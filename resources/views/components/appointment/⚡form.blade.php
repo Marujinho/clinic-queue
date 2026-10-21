@@ -7,10 +7,12 @@ use App\Models\Patient;
 use App\Services\Appointment\AppointmentScheduler;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 new class extends Component
 {
+    #[Locked]
     public ?int $appointmentId = null;
 
     public ?int $patient_id = null;
@@ -28,7 +30,7 @@ new class extends Component
         $this->appointmentId = $appointmentId;
 
         if ($appointmentId !== null) {
-            $appointment = Appointment::findOrFail($appointmentId);
+            $appointment = $this->editableAppointment($appointmentId);
 
             $this->patient_id = $appointment->patient_id;
             $this->healthcare_provider_id = $appointment->healthcare_provider_id;
@@ -56,7 +58,7 @@ new class extends Component
             ],
             'scheduled_at' => ['required', 'date', 'after_or_equal:now'],
             'reason' => ['nullable', 'string', 'max:255'],
-            'notes' => ['nullable', 'string'],
+            'notes' => ['nullable', 'string', 'max:1000'],
         ];
     }
 
@@ -89,8 +91,7 @@ new class extends Component
         $validated['scheduled_at'] = $scheduledAt;
 
         if ($this->appointmentId !== null) {
-            $appointment = Appointment::findOrFail($this->appointmentId);
-            $appointment->update($validated);
+            $this->editableAppointment($this->appointmentId)->update($validated);
         } else {
             Appointment::create($validated + ['status' => AppointmentStatus::Scheduled]);
         }
@@ -105,6 +106,23 @@ new class extends Component
     public function cancel(): void
     {
         $this->dispatch('form-cancelled');
+    }
+
+    /**
+     * Only appointments that are still open (scheduled / confirmed) may be
+     * rescheduled; completed, cancelled and no-show records are read-only.
+     */
+    private function editableAppointment(int $appointmentId): Appointment
+    {
+        $appointment = Appointment::findOrFail($appointmentId);
+
+        abort_unless(
+            in_array($appointment->status, [AppointmentStatus::Scheduled, AppointmentStatus::Confirmed], true),
+            403,
+            'Only scheduled or confirmed appointments can be edited.',
+        );
+
+        return $appointment;
     }
 
     /**

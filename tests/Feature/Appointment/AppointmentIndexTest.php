@@ -169,3 +169,16 @@ it('allows an admin to transition an appointment', function () {
 
     expect($appointment->fresh()->status)->toBe(AppointmentStatus::Confirmed);
 });
+
+it('ignores an unknown status value instead of crashing', function () {
+    actingAsRole(Role::Receptionist);
+
+    $appointment = Appointment::factory()->create();
+
+    Livewire::test('pages::appointment.index')
+        ->call('changeStatus', $appointment->id, 'not-a-status')
+        ->assertOk()
+        ->assertHasNoErrors();
+
+    expect($appointment->fresh()->status)->toBe(AppointmentStatus::Scheduled);
+});

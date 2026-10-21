@@ -10,8 +10,8 @@ use Tests\TestCase;
 | Test Case
 |--------------------------------------------------------------------------
 |
-| Feature tests use the full application TestCase and reset the database
-| between tests. Unit tests use the base TestCase without a database.
+| Both suites extend the application TestCase. Feature tests always reset the
+| database and skip Vite; Unit tests opt into RefreshDatabase per file.
 |
 */
 

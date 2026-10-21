@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Enums\Role;
 use App\Models\Patient;
+use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
 
 it('searches patients by name', function () {
@@ -94,3 +95,32 @@ it('forbids a provider from opening the create form', function () {
         ->call('create')
         ->assertForbidden();
 });
+
+it('searches patients by full name across first and last name', function () {
+    actingAsRole(Role::Receptionist);
+
+    Patient::factory()->create(['first_name' => 'Grace', 'last_name' => 'Hopper', 'medical_record_number' => 'MRN-A']);
+    Patient::factory()->create(['first_name' => 'Grace', 'last_name' => 'Turing', 'medical_record_number' => 'MRN-B']);
+
+    Livewire::test('pages::patient.index')
+        ->set('search', 'Grace Hopper')
+        ->assertSee('Hopper')
+        ->assertDontSee('Turing');
+});
+
+it('treats SQL wildcard characters in the search literally', function () {
+    actingAsRole(Role::Receptionist);
+
+    Patient::factory()->create(['first_name' => 'Grace', 'last_name' => 'Hopper', 'medical_record_number' => 'MRN-A']);
+
+    Livewire::test('pages::patient.index')
+        ->set('search', '%')
+        ->assertDontSee('Hopper');
+});
+
+it('does not let the client change the record being edited', function () {
+    actingAsRole(Role::Receptionist);
+
+    Livewire::test('pages::patient.index')
+        ->set('editingId', 1);
+})->throws(CannotUpdateLockedPropertyException::class);

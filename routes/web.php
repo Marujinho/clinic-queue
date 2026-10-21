@@ -21,9 +21,9 @@ Route::middleware('auth')->group(function () {
 
     Route::livewire('/dashboard', 'pages::dashboard.index')->name('dashboard');
 
-    // Auto-load per-domain route files. Each domain owns its own file under
-    // routes/domains/ so parallel work never conflicts in this file. Routes
-    // defined there inherit this authenticated group.
+    // Auto-load per-domain route files. Each domain (patient, provider,
+    // appointment, queue) keeps its routes self-contained under routes/domains/;
+    // everything defined there inherits this authenticated group.
     foreach (glob(base_path('routes/domains/*.php')) ?: [] as $domainRoutes) {
         require $domainRoutes;
     }

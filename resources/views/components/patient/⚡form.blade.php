@@ -2,10 +2,12 @@
 
 use App\Models\Patient;
 use Illuminate\Validation\Rule;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 new class extends Component
 {
+    #[Locked]
     public ?int $patientId = null;
 
     public string $first_name = '';
@@ -48,11 +50,12 @@ new class extends Component
             'first_name' => ['required', 'string', 'min:2', 'max:100'],
             'last_name' => ['required', 'string', 'min:2', 'max:100'],
             'date_of_birth' => ['required', 'date', 'before_or_equal:today'],
-            'email' => ['nullable', 'email'],
-            'phone' => ['required', 'string'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'phone' => ['required', 'string', 'max:30'],
             'medical_record_number' => [
                 'required',
                 'string',
+                'max:50',
                 Rule::unique('patients', 'medical_record_number')->ignore($this->patientId),
             ],
             'active' => ['boolean'],
