@@ -211,3 +211,15 @@ it('allows admins and receptionists but forbids providers (authz)', function () 
     actingAsRole(Role::Provider);
     test()->get('/check-in')->assertForbidden();
 });
+
+it('finds a patient by full name in the check-in search', function () {
+    actingAsRole(Role::Receptionist);
+
+    Patient::factory()->create(['first_name' => 'Grace', 'last_name' => 'Hopper']);
+    Patient::factory()->create(['first_name' => 'Grace', 'last_name' => 'Turing']);
+
+    Livewire::test('pages::queue.check-in')
+        ->set('patientSearch', 'Grace Hopper')
+        ->assertSee('Grace Hopper')
+        ->assertDontSee('Grace Turing');
+});

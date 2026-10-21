@@ -2,10 +2,15 @@
 
 use App\Models\HealthcareProvider;
 use Illuminate\Validation\Rule;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 new class extends Component
 {
+    /** @var list<string> */
+    public const SPECIALTIES = ['Cardiology', 'Pediatrics', 'General Practice', 'Dermatology', 'Orthopedics'];
+
+    #[Locked]
     public ?int $providerId = null;
 
     public string $name = '';
@@ -40,10 +45,11 @@ new class extends Component
     {
         return [
             'name' => 'required|string|min:2|max:100',
-            'specialty' => 'required|string',
+            'specialty' => ['required', 'string', Rule::in(self::SPECIALTIES)],
             'license_number' => [
                 'required',
                 'string',
+                'max:50',
                 Rule::unique('healthcare_providers', 'license_number')->ignore($this->providerId),
             ],
             'active' => 'boolean',
@@ -93,7 +99,7 @@ new class extends Component
                 class="w-full rounded-lg border border-border bg-surface px-4 py-2 text-sm text-ink focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
             >
                 <option value="">Select a specialty</option>
-                @foreach (['Cardiology', 'Pediatrics', 'General Practice', 'Dermatology', 'Orthopedics'] as $option)
+                @foreach ($this::SPECIALTIES as $option)
                     <option value="{{ $option }}">{{ $option }}</option>
                 @endforeach
             </select>

@@ -61,28 +61,14 @@
         {{-- Main column --}}
         <div class="flex-1 flex flex-col min-w-0">
             {{-- Top bar --}}
-            <header class="h-16 shrink-0 border-b border-border bg-surface flex items-center justify-between px-6 gap-4">
-                {{-- Search --}}
-                <div class="flex items-center gap-2 flex-1 max-w-md">
-                    <div class="flex items-center gap-2 w-full bg-hover-surface border border-border rounded-lg px-3 py-2">
-                        <x-icon name="search" class="w-4 h-4 text-muted" />
-                        <input type="text" placeholder="Search…"
-                            class="w-full bg-transparent text-sm text-ink placeholder:text-muted-soft focus:outline-none" />
-                    </div>
-                </div>
-
-                {{-- Right side --}}
+            <header class="h-16 shrink-0 border-b border-border bg-surface flex items-center justify-end px-6 gap-4">
+                {{-- Current user + logout --}}
                 <div class="flex items-center gap-4">
-                    <button type="button" aria-label="Notifications"
-                        class="text-muted hover:text-ink hover:bg-hover-surface rounded-lg p-2 focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none">
-                        <x-icon name="bell" class="w-5 h-5" />
-                    </button>
-
                     <div class="flex items-center gap-3">
                         <x-avatar :name="auth()->user()?->name ?? 'Guest'" size="md" />
                         <div class="leading-tight">
                             <p class="text-sm font-medium text-ink">{{ auth()->user()?->name ?? 'Guest' }}</p>
-                            <p class="text-xs text-muted">{{ auth()->user()?->role ?? 'Staff' }}</p>
+                            <p class="text-xs text-muted">{{ auth()->user()?->role?->label() ?? 'Staff' }}</p>
                         </div>
                     </div>
 

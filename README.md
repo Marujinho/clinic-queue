@@ -1,5 +1,7 @@
 # Clinic Queue
 
+[![CI](https://github.com/Marujinho/clinic-queue/actions/workflows/ci.yml/badge.svg)](https://github.com/Marujinho/clinic-queue/actions/workflows/ci.yml)
+
 Clinic Queue is a queue and appointment management system for walk-in clinics. It covers the
 full front-desk workflow: registering patients, scheduling appointments with conflict
 detection, checking patients into service queues, and calling them up on a live queue board —
@@ -76,35 +78,62 @@ routes/actions reject it server-side regardless.
 - **Design system** — tokens and component specs live in `docs/STYLEGUIDE.md`; the UI is built
   from 13 base Blade components (buttons, cards, stat cards, badges, tables, modals, …) using
   Tailwind theme tokens only, no ad-hoc colors.
-- **Tests** — Pest suite (190 tests / 459 assertions) running on in-memory SQLite: the
-  permission matrix, every business rule, state-machine paths, seeders, and dashboards.
+- **Tests** — Pest suite (207 tests / 512 assertions) running on in-memory SQLite: the
+  permission matrix, every business rule, state-machine paths, seeders, dashboards, login
+  throttling and account deactivation. CI runs Pint + Pest on PHP 8.4 and 8.5 for every push.
+- **Security** — session-based auth with login rate limiting (5 attempts/min per e-mail + IP),
+  deactivated accounts are rejected at login and signed out mid-session, every mutating Livewire
+  action re-checks its gate server-side, record identifiers are `#[Locked]` against client
+  tampering, and ticket transitions are atomic compare-and-set updates with per-queue row locks
+  so concurrent check-ins / "Call Next" clicks cannot duplicate numbers or call the same patient.
+
+## Design decisions
+
+- **Queues are shared, not owned.** A ticket belongs to a queue, not to a provider: any provider
+  on duty can call the next patient from any active queue, which is how a walk-in clinic's
+  front line operates. Linking users to a specific `HealthcareProvider` (and restricting
+  call/start/complete to the ticket's owner) is a deliberate non-goal of this MVP.
+- **Soft deactivation everywhere.** Patients, providers, queues and users are never deleted,
+  only flagged inactive, so historical tickets and appointments keep their references.
+- **Business rules live in services, not components.** Livewire components validate input and
+  call `AppointmentScheduler` / `TicketStateMachine`; they never flip a status themselves.
 
 ## Getting started
 
-Requirements: Docker + Docker Compose, PHP 8.3+ and Composer on the host (only to bootstrap
-Sail), Node 20+.
+### With Docker (Laravel Sail, MySQL) — recommended
+
+Requirements: Docker + Docker Compose, PHP 8.4+ and Composer on the host (to bootstrap Sail),
+Node 22+.
+
+```sh
+git clone https://github.com/Marujinho/clinic-queue.git
+cd clinic-queue
+
+cp .env.example .env          # already configured for Sail (MySQL, app on :8081, DB on :3307)
+composer install
+./vendor/bin/sail up -d
+./vendor/bin/sail artisan key:generate
+./vendor/bin/sail artisan migrate:fresh --seed
+npm install && npm run build
+```
+
+The app runs at <http://localhost:8081> with a realistic demo dataset (patients, providers,
+appointments, and queues with tickets in several states).
+
+### Without Docker (SQLite)
+
+Requirements: PHP 8.4+ with the `pdo_sqlite` extension, Composer, Node 22+.
 
 ```sh
 git clone https://github.com/Marujinho/clinic-queue.git
 cd clinic-queue
 
 cp .env.example .env
-# Ensure the DB block matches compose.yaml:
-#   DB_CONNECTION=mysql  DB_HOST=mysql  DB_PORT=3306
-#   DB_DATABASE=laravel  DB_USERNAME=sail  DB_PASSWORD=password
-#   APP_PORT=8081
-
-composer install
-./vendor/bin/sail up -d
-./vendor/bin/sail artisan key:generate
-./vendor/bin/sail composer install
-npm install && npm run build
-
-./vendor/bin/sail artisan migrate:fresh --seed
+# In .env: comment out the MySQL block and uncomment  DB_CONNECTION=sqlite
+composer setup                 # install, key:generate, migrate (creates database/database.sqlite), npm build
+php artisan db:seed
+php artisan serve              # http://localhost:8000
 ```
-
-The app runs at <http://localhost:8081> with a realistic demo dataset (patients, providers,
-appointments, and queues with tickets in several states).
 
 ### Demo logins (password: `password`)
 
@@ -114,11 +143,16 @@ appointments, and queues with tickets in several states).
 | `receptionist@clinic.test` | Receptionist |
 | `provider@clinic.test` | Provider |
 
+Demo accounts are only seeded outside `production`.
+
 ## Running the tests
 
+The suite uses an in-memory SQLite database and needs no `.env` — a fresh clone can run it
+right after `composer install`.
+
 ```sh
-./vendor/bin/sail artisan test          # full Pest suite (in-memory SQLite)
-./vendor/bin/sail exec laravel.test ./vendor/bin/pint --test   # code style
+php artisan test                               # or: ./vendor/bin/sail artisan test
+vendor/bin/pint --test                         # code style
 ```
 
 ## Docs

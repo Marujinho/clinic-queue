@@ -8,6 +8,7 @@ use App\Enums\TicketStatus;
 use App\Models\Queue;
 use App\Models\QueueTicket;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Centralizes every legal lifecycle transition for a queue ticket. Each method
@@ -29,14 +30,7 @@ class TicketStateMachine
      */
     public function call(QueueTicket $ticket): QueueTicket
     {
-        $this->assert($ticket, TicketStatus::Waiting, TicketStatus::Called);
-
-        $ticket->forceFill([
-            'status' => TicketStatus::Called,
-            'called_at' => Carbon::now(),
-        ])->save();
-
-        return $ticket;
+        return $this->transition($ticket, TicketStatus::Waiting, TicketStatus::Called, 'called_at');
     }
 
     /**
@@ -44,14 +38,7 @@ class TicketStateMachine
      */
     public function start(QueueTicket $ticket): QueueTicket
     {
-        $this->assert($ticket, TicketStatus::Called, TicketStatus::InService);
-
-        $ticket->forceFill([
-            'status' => TicketStatus::InService,
-            'service_started_at' => Carbon::now(),
-        ])->save();
-
-        return $ticket;
+        return $this->transition($ticket, TicketStatus::Called, TicketStatus::InService, 'service_started_at');
     }
 
     /**
@@ -59,14 +46,7 @@ class TicketStateMachine
      */
     public function complete(QueueTicket $ticket): QueueTicket
     {
-        $this->assert($ticket, TicketStatus::InService, TicketStatus::Completed);
-
-        $ticket->forceFill([
-            'status' => TicketStatus::Completed,
-            'completed_at' => Carbon::now(),
-        ])->save();
-
-        return $ticket;
+        return $this->transition($ticket, TicketStatus::InService, TicketStatus::Completed, 'completed_at');
     }
 
     /**
@@ -74,15 +54,13 @@ class TicketStateMachine
      */
     public function cancel(QueueTicket $ticket): QueueTicket
     {
-        if (! in_array($ticket->status, [TicketStatus::Waiting, TicketStatus::Called], true)) {
+        $from = [TicketStatus::Waiting, TicketStatus::Called];
+
+        if (! in_array($ticket->status, $from, true)) {
             throw InvalidTicketTransition::for($ticket, TicketStatus::Cancelled);
         }
 
-        $ticket->forceFill([
-            'status' => TicketStatus::Cancelled,
-        ])->save();
-
-        return $ticket;
+        return $this->transition($ticket, $from, TicketStatus::Cancelled);
     }
 
     /**
@@ -92,13 +70,20 @@ class TicketStateMachine
      */
     public function callNext(Queue $queue): ?QueueTicket
     {
-        $ticket = $this->nextWaiting($queue);
+        // Serialize concurrent "Call Next" clicks on the same queue: the queue
+        // row is locked for the duration of the transaction so two providers
+        // cannot both pick (and call) the same waiting ticket.
+        return DB::transaction(function () use ($queue): ?QueueTicket {
+            Queue::query()->whereKey($queue->getKey())->lockForUpdate()->first();
 
-        if ($ticket === null) {
-            return null;
-        }
+            $ticket = $this->nextWaiting($queue);
 
-        return $this->call($ticket);
+            if ($ticket === null) {
+                return null;
+            }
+
+            return $this->call($ticket);
+        });
     }
 
     /**
@@ -115,10 +100,41 @@ class TicketStateMachine
             ->first();
     }
 
-    private function assert(QueueTicket $ticket, TicketStatus $from, TicketStatus $to): void
-    {
-        if ($ticket->status !== $from) {
+    /**
+     * Atomically move the ticket from one of the allowed `$from` statuses to
+     * `$to`. The status check is part of the UPDATE's WHERE clause (compare-and-
+     * set), so a ticket changed by a concurrent request between read and write
+     * is detected (zero rows affected) and rejected instead of overwritten.
+     *
+     * @param  TicketStatus|list<TicketStatus>  $from
+     */
+    private function transition(
+        QueueTicket $ticket,
+        TicketStatus|array $from,
+        TicketStatus $to,
+        ?string $timestampColumn = null,
+    ): QueueTicket {
+        $from = is_array($from) ? $from : [$from];
+
+        if (! in_array($ticket->status, $from, true)) {
             throw InvalidTicketTransition::for($ticket, $to);
         }
+
+        $attributes = ['status' => $to];
+
+        if ($timestampColumn !== null) {
+            $attributes[$timestampColumn] = Carbon::now();
+        }
+
+        $updated = QueueTicket::query()
+            ->whereKey($ticket->getKey())
+            ->whereIn('status', $from)
+            ->update($attributes + ['updated_at' => Carbon::now()]);
+
+        if ($updated === 0) {
+            throw InvalidTicketTransition::for($ticket->refresh(), $to);
+        }
+
+        return $ticket->refresh();
     }
 }

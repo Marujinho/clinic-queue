@@ -125,3 +125,14 @@ it('searches providers by specialty', function () {
         ->assertSee('Dr. Heart Doc')
         ->assertDontSee('Dr. Kid Doc');
 });
+
+it('rejects a specialty outside the supported list', function () {
+    actingAsRole(Role::Admin);
+
+    Livewire::test('provider.form')
+        ->set('name', 'Dr. Eve Unknown')
+        ->set('specialty', 'Astrology')
+        ->set('license_number', 'CRM-999001')
+        ->call('save')
+        ->assertHasErrors(['specialty' => 'in']);
+});

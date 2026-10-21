@@ -5,9 +5,8 @@
 @source '../views/**/*.blade.php';
 
 /*
- * Switzer web font files are PENDING (not yet added under resources/fonts/switzer/).
- * No @font-face is declared yet, so the fallback stack below is active — the
- * system UI sans-serif renders until the licensed Switzer .woff2 files land.
+ * Switzer is the brand typeface but is not bundled (licensed font); without an
+ * @font-face declaration the system UI sans-serif fallback below is used.
  */
 @theme {
     --font-sans: 'Switzer', ui-sans-serif, system-ui, sans-serif;

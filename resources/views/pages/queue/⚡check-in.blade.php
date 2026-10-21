@@ -81,11 +81,7 @@ new #[Layout('components.layouts.app')] class extends Component
         }
 
         // BR-05: a patient may hold only one active ticket at a time.
-        $hasActiveTicket = $patient->queueTickets()
-            ->whereIn('status', [TicketStatus::Waiting, TicketStatus::Called, TicketStatus::InService])
-            ->exists();
-
-        if ($hasActiveTicket) {
+        if ($this->hasActiveTicket($patient)) {
             $this->addError('patient_id', 'This patient already has an active ticket in a queue.');
 
             return;
@@ -109,15 +105,32 @@ new #[Layout('components.layouts.app')] class extends Component
             ? TicketPriority::from((int) $validated['priority'])
             : TicketPriority::Normal;
 
-        $ticket = DB::transaction(fn (): QueueTicket => QueueTicket::create([
-            'queue_id' => $queue->id,
-            'patient_id' => $patient->id,
-            'appointment_id' => $validated['appointment_id'],
-            'ticket_number' => app(TicketNumberGenerator::class)->next($queue),
-            'priority' => $priority,
-            'status' => TicketStatus::Waiting,
-            'checked_in_at' => now(),
-        ]));
+        // Lock the queue row so simultaneous check-ins on the same queue are
+        // serialized: the sequential ticket number and the BR-05 re-check below
+        // are then computed against a consistent snapshot.
+        $ticket = DB::transaction(function () use ($queue, $patient, $validated, $priority): ?QueueTicket {
+            $lockedQueue = Queue::query()->whereKey($queue->id)->lockForUpdate()->firstOrFail();
+
+            if ($this->hasActiveTicket($patient)) {
+                return null;
+            }
+
+            return QueueTicket::create([
+                'queue_id' => $lockedQueue->id,
+                'patient_id' => $patient->id,
+                'appointment_id' => $validated['appointment_id'],
+                'ticket_number' => app(TicketNumberGenerator::class)->next($lockedQueue),
+                'priority' => $priority,
+                'status' => TicketStatus::Waiting,
+                'checked_in_at' => now(),
+            ]);
+        });
+
+        if ($ticket === null) {
+            $this->addError('patient_id', 'This patient already has an active ticket in a queue.');
+
+            return;
+        }
 
         session()->flash('status', sprintf(
             '%s checked into %s as ticket %s.',
@@ -128,6 +141,13 @@ new #[Layout('components.layouts.app')] class extends Component
 
         $this->reset('patientSearch', 'patient_id', 'queue_id', 'appointment_id');
         $this->priority = TicketPriority::Normal->value;
+    }
+
+    private function hasActiveTicket(Patient $patient): bool
+    {
+        return $patient->queueTickets()
+            ->whereIn('status', [TicketStatus::Waiting, TicketStatus::Called, TicketStatus::InService])
+            ->exists();
     }
 
     private function selectedQueue(): ?Queue
@@ -142,16 +162,9 @@ new #[Layout('components.layouts.app')] class extends Component
         $results = collect();
 
         if ($this->patient_id === null && $search !== '') {
-            $like = '%'.$search.'%';
-
             $results = Patient::query()
                 ->active()
-                ->where(function (Builder $query) use ($like): void {
-                    $query->where('first_name', 'like', $like)
-                        ->orWhere('last_name', 'like', $like)
-                        ->orWhere('medical_record_number', 'like', $like)
-                        ->orWhereRaw("(first_name || ' ' || last_name) like ?", [$like]);
-                })
+                ->search($search)
                 ->orderBy('first_name')
                 ->orderBy('last_name')
                 ->limit(8)

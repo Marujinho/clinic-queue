@@ -1,6 +1,9 @@
 <?php
 
+use Illuminate\Auth\Events\Lockout;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
@@ -16,19 +19,55 @@ new #[Layout('components.layouts.guest')] class extends Component
 
     public bool $remember = false;
 
+    /** Failed attempts allowed per e-mail + IP before a one-minute lockout. */
+    private const MAX_ATTEMPTS = 5;
+
     public function login()
     {
         $this->validate();
 
-        if (! Auth::attempt(['email' => $this->email, 'password' => $this->password], $this->remember)) {
+        $this->ensureIsNotRateLimited();
+
+        // Only active accounts may sign in; deactivated staff are rejected
+        // with the same generic message so account state is not disclosed.
+        $credentials = ['email' => $this->email, 'password' => $this->password, 'active' => true];
+
+        if (! Auth::attempt($credentials, $this->remember)) {
+            RateLimiter::hit($this->throttleKey());
+
             throw ValidationException::withMessages([
-                'email' => 'These credentials do not match our records.',
+                'email' => __('auth.failed'),
             ]);
         }
+
+        RateLimiter::clear($this->throttleKey());
 
         session()->regenerate();
 
         return redirect()->intended(route('dashboard'));
+    }
+
+    private function ensureIsNotRateLimited(): void
+    {
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), self::MAX_ATTEMPTS)) {
+            return;
+        }
+
+        event(new Lockout(request()));
+
+        $seconds = RateLimiter::availableIn($this->throttleKey());
+
+        throw ValidationException::withMessages([
+            'email' => __('auth.throttle', [
+                'seconds' => $seconds,
+                'minutes' => (int) ceil($seconds / 60),
+            ]),
+        ]);
+    }
+
+    private function throttleKey(): string
+    {
+        return Str::transliterate(Str::lower($this->email).'|'.request()->ip());
     }
 };
 ?>

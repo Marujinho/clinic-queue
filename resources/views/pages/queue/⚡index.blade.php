@@ -2,6 +2,7 @@
 
 use App\Models\Queue;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -9,6 +10,7 @@ new #[Layout('components.layouts.app')] class extends Component
 {
     public bool $showForm = false;
 
+    #[Locked]
     public ?int $editingId = null;
 
     public function mount(): void

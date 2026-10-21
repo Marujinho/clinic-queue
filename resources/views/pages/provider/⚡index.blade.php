@@ -4,6 +4,7 @@ use App\Models\HealthcareProvider;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -21,6 +22,7 @@ new #[Layout('components.layouts.app')] class extends Component
 
     public bool $showModal = false;
 
+    #[Locked]
     public ?int $editingId = null;
 
     public function updatedSearch(): void

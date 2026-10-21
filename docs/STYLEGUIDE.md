@@ -26,7 +26,7 @@ The single source of truth for the visual design of the Clinic Queue Management 
 
 - **Design with tokens, not raw values.** Reference the semantic token names below (e.g. `primary`, `ink`, `surface`) rather than hard-coding hex values or one-off arbitrary Tailwind classes like `text-[#1b1b18]`.
 - **Tokens map to Tailwind v4 `@theme` variables.** This project uses Tailwind v4, which is configured in `resources/css/app.css` via an `@theme { … }` block (there is no `tailwind.config.js`). Each token lists the `@theme` variable name it should be implemented as, so a Tailwind class like `bg-primary` or `text-ink` resolves correctly once the tokens are wired up.
-- **Status of implementation.** See [§9](#9-implementation-status). The tokens and font setup below are the **target spec**; code snippets marked _"target — not yet applied"_ describe what to add to the codebase when styling work begins. They are intentionally not applied yet.
+- **Status of implementation.** See [§9](#9-implementation-status). All color tokens below are live in `resources/css/app.css`; the Switzer font is the only asset not bundled (the system sans-serif fallback renders).
 - **Adding a component?** Follow the [Contribution checklist](#10-contribution-checklist) and add a row to the [Component Catalog](#11-component-catalog).
 
 ---
@@ -82,12 +82,11 @@ Each status uses a **text/icon color** on a matching **tint fill** for pill badg
 
 > **Never rely on color alone** to communicate status — always pair the tint with a text label and, where used, an icon (see [§8](#8-accessibility)).
 
-### Target implementation — _not yet applied_
+### Implementation
 
-When styling work begins, add to `resources/css/app.css` inside the `@theme` block:
+The tokens are declared in `resources/css/app.css` inside the `@theme` block:
 
 ```css
-/* target — not yet applied */
 @theme {
     --color-primary: #34AA86;
     --color-primary-hover: #2E9576;
@@ -140,13 +139,14 @@ Fallback stack: `Switzer, ui-sans-serif, system-ui, sans-serif`.
 | Label / caption | `text-xs` (12px) | 500 | `muted` | "Checked-in Patients", column headers |
 | Delta caption | `text-xs` (12px) | 500 | `success` / `danger` | "+12 from yesterday" |
 
-### Self-hosting spec — _not yet applied_
+### Self-hosting spec (font not yet bundled)
+
+Switzer is a licensed typeface and its files are not committed; the fallback stack is active. To ship it:
 
 1. Place the Switzer web fonts under `resources/fonts/switzer/` (e.g. `Switzer-Regular.woff2`, `-Medium`, `-Semibold`, `-Bold`). Obtain them from the licensed Switzer distribution (Fontshare).
 2. Add `@font-face` declarations and set the sans token in `resources/css/app.css`:
 
 ```css
-/* target — not yet applied */
 @font-face {
     font-family: 'Switzer';
     src: url('/fonts/switzer/Switzer-Regular.woff2') format('woff2');
@@ -181,7 +181,7 @@ Fallback stack: `Switzer, ui-sans-serif, system-ui, sans-serif`.
 }
 ```
 
-3. Ensure the font files are served from `public/` (e.g. copy/symlink to `public/fonts/switzer/` or reference via Vite `@source`/asset pipeline) so the `/fonts/...` URLs resolve. Remove the current Bunny `Instrument Sans` loader in `vite.config.js` once Switzer is in place.
+3. Ensure the font files are served from `public/` (e.g. copy/symlink to `public/fonts/switzer/` or reference via Vite `@source`/asset pipeline) so the `/fonts/...` URLs resolve.
 
 ---
 
@@ -223,7 +223,7 @@ The app uses a **fixed-sidebar dashboard shell**:
 
 ```
 ┌────────────┬──────────────────────────────────────────────┐
-│            │  Top bar: search · notifications · user       │
+│            │  Top bar: current user · logout               │
 │  Sidebar   ├──────────────────────────────────────────────┤
 │            │  Page title + subtitle          [date][actions]│
 │  Basics    │                                                │
@@ -237,7 +237,7 @@ The app uses a **fixed-sidebar dashboard shell**:
 ```
 
 - **Sidebar:** fixed width (`w-60`), `surface` background, grouped nav sections with a `muted` uppercase group label ("Basics", "Others"). Active item uses `primary-tint` background + `primary` text/icon. Logo pinned top.
-- **Top bar:** full-width search input (left), notification/mail icons and user avatar+name (right).
+- **Top bar:** current user avatar, name and role label plus the logout button, right-aligned. (No global search or notification controls — nothing in the product backs them yet.)
 - **Page header:** bold page title + `muted` subtitle on the left; date-range / period / quick-action pills on the right.
 - **Metric row:** three equal cards; the **first is the green hero** (`primary` fill, white text), the rest are default `surface` cards.
 - **Content grid:** two columns — a wider left panel (chart) and a narrower right panel (list). Collapses to one column below `lg`.
@@ -334,10 +334,10 @@ Each spec lists purpose, anatomy, the Tailwind classes to use (via tokens), and 
 | Item | Status |
 |------|--------|
 | Design tokens in `app.css @theme` | **Applied** — all §3 `--color-*` tokens + `--font-sans` wired into `resources/css/app.css`; added `@source '../views/**/*.blade.php'` |
-| Switzer font self-hosted | **Pending** — font files not yet added; no `@font-face` declared, so the fallback stack (`ui-sans-serif, system-ui, sans-serif`) is active. The Bunny **Instrument Sans** loader has been **removed** from `vite.config.js` |
+| Switzer font self-hosted | **Not bundled** — licensed font files are not committed and no `@font-face` is declared, so the fallback stack (`ui-sans-serif, system-ui, sans-serif`) renders. See [§4](#4-typography) for the self-hosting steps |
 | Blade/Livewire components | **Done** — all base components (`button`, `card`, `stat-card`, `status-badge`, `nav-item`, `avatar`, `icon`, `icon-chip`, `filter-pill`, `data-table`, `modal`, layouts `layouts/app`, `layouts/guest`) plus every domain (Patient / Provider / Appointment / Queue) and the role dashboards — see [Component Catalog](#11-component-catalog) |
 
-All MVP screens are built against the tokens above; the Switzer font files remain the only pending asset (fallback stack active).
+All MVP screens are built against the tokens above; the Switzer font files are the only asset not shipped (fallback stack active).
 
 ---
 
@@ -346,7 +346,7 @@ All MVP screens are built against the tokens above; the Switzer font files remai
 Before a UI component (Blade or Livewire) is considered complete:
 
 - [ ] Uses only documented **color tokens** — no ad-hoc hex or arbitrary `[#…]` classes.
-- [ ] Uses the **Switzer** font stack (once wired) — no per-component font overrides.
+- [ ] Uses the default **font-sans** stack — no per-component font overrides.
 - [ ] Uses documented **radius, spacing, and shadow** values.
 - [ ] Matches the relevant **component spec** in [§7](#7-component-specs), or adds a new spec there if it is a genuinely new pattern.
 - [ ] Meets the **accessibility** rules in [§8](#8-accessibility) (contrast, focus, status-not-color-only, semantics).
@@ -359,8 +359,6 @@ If a design need is not covered by an existing token or spec, extend this guide 
 ## 11. Component Catalog
 
 Every reusable Blade/Livewire component in the app is registered here. **Add a row whenever you create or significantly change a component.**
-
-Each domain team edits **only its own sub-section** below to avoid merge conflicts.
 
 ### Base (foundation)
 
@@ -377,7 +375,7 @@ Each domain team edits **only its own sub-section** below to avoid merge conflic
 | Filter pill | Blade | `resources/views/components/filter-pill.blade.php` | [§7.8](#78-filter--sort-pill) | Done | Leading icon + label + trailing chevron; renders `<button>` |
 | Icon chip | Blade | `resources/views/components/icon-chip.blade.php` | [§7.9](#79-icon-chip) | Done | Wraps a leading icon in a `primary-tint` `w-8 h-8` chip |
 | Modal | Blade | `resources/views/components/modal.blade.php` | [§7](#7-component-specs) | Done | Presentational overlay + panel; parent controls visibility via `@if`; `close`/`footer` slots |
-| App layout | Blade | `resources/views/components/layouts/app.blade.php` | [§6](#6-layout) | Done | Full-page dashboard shell (`components.layouts.app`): sidebar + top bar + flash region + `{{ $slot }}` |
+| App layout | Blade | `resources/views/components/layouts/app.blade.php` | [§6](#6-layout) | Done | Full-page dashboard shell (`components.layouts.app`): sidebar + top bar (user, role label, logout) + flash region + `{{ $slot }}` |
 | Guest layout | Blade | `resources/views/components/layouts/guest.blade.php` | [§6](#6-layout) | Done | Centered `max-w-md` shell with wordmark; used by auth/login pages |
 
 ### Patient

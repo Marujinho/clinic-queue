@@ -32,6 +32,11 @@ class FoundationSeeder extends Seeder
             ['name' => 'Dr. Paul Provider', 'email' => 'provider@clinic.test', 'role' => Role::Provider],
         ];
 
+        // Demo accounts share a well-known password; never create them in production.
+        if (app()->environment('production')) {
+            return;
+        }
+
         foreach ($users as $attributes) {
             User::query()->updateOrCreate(
                 ['email' => $attributes['email']],

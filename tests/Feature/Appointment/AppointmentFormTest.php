@@ -7,6 +7,7 @@ use App\Enums\Role;
 use App\Models\Appointment;
 use App\Models\HealthcareProvider;
 use App\Models\Patient;
+use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
 
 it('creates an appointment with valid data', function () {
@@ -199,4 +200,36 @@ it('forbids a provider role from creating an appointment', function () {
         ->assertForbidden();
 
     expect(Appointment::count())->toBe(0);
+});
+
+it('refuses to edit an appointment that is no longer open', function (AppointmentStatus $status) {
+    actingAsRole(Role::Receptionist);
+
+    $appointment = Appointment::factory()->create(['status' => $status]);
+
+    Livewire::test('appointment.form', ['appointmentId' => $appointment->id])
+        ->assertForbidden();
+})->with([
+    'completed' => AppointmentStatus::Completed,
+    'cancelled' => AppointmentStatus::Cancelled,
+    'no-show' => AppointmentStatus::NoShow,
+]);
+
+it('does not let the client change which appointment is being edited', function () {
+    actingAsRole(Role::Receptionist);
+
+    Livewire::test('appointment.form')
+        ->set('appointmentId', 1);
+})->throws(CannotUpdateLockedPropertyException::class);
+
+it('limits the length of notes', function () {
+    actingAsRole(Role::Receptionist);
+
+    Livewire::test('appointment.form')
+        ->set('patient_id', Patient::factory()->create()->id)
+        ->set('healthcare_provider_id', HealthcareProvider::factory()->create()->id)
+        ->set('scheduled_at', now()->addDay()->format('Y-m-d\TH:i'))
+        ->set('notes', str_repeat('x', 1001))
+        ->call('save')
+        ->assertHasErrors(['notes' => 'max']);
 });

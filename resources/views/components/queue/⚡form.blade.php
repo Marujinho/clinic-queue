@@ -2,10 +2,12 @@
 
 use App\Models\Department;
 use App\Models\Queue;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 new class extends Component
 {
+    #[Locked]
     public ?int $queueId = null;
 
     public string $name = '';
